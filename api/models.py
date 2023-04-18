@@ -1,10 +1,11 @@
 import re
+import uuid
 from fastapi import HTTPException, status
 from pydantic import BaseModel, EmailStr, validator
-import uuid
 
 
-LETTER_MATCH_PATTERN = re.compile(r"^[а-яА-Яa-zA-Z\-]+$")
+
+LETTER_MATCH_PATTERN = re.compile(r"^[а-яА-Яa-zA-Z0-9\-]+$")
 
 
 class DefaultModel(BaseModel):
