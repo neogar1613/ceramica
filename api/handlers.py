@@ -34,10 +34,13 @@ async def _create_new_user(data: UserCreate, db) -> GetUser:
                        is_active=user.is_active,)
 
 
-async def _get_by_id(user_id: UUID, db) -> GetUser:
+async def _get_by_id_or_email(user_id_or_email: Union[UUID, EmailStr], db) -> GetUser:
     async with db.begin():
         user_crud = UserCRUD(db)
-        user = await user_crud.get_by_id(user_id=user_id)
+        if isinstance(user_id_or_email, UUID):
+            user = await user_crud.get_by_id_or_email(user_id=user_id_or_email)
+        else:
+            user = await user_crud.get_by_id_or_email(user_email=user_id_or_email)
         return GetUser(user_id=user.user_id,
                        username=user.username,
                        name=user.name,
@@ -46,16 +49,14 @@ async def _get_by_id(user_id: UUID, db) -> GetUser:
                        is_active=user.is_active,)
 
 
-async def _get_by_email(user_email: EmailStr, db) -> GetUser:
+async def _get_all_users(limit: int, offset: int, db) -> list[GetUser]:
     async with db.begin():
         user_crud = UserCRUD(db)
-        user = await user_crud.get_by_email(email=user_email)
-        return GetUser(user_id=user.user_id,
-                       username=user.username,
-                       name=user.name,
-                       surname=user.surname,
-                       email=user.email,
-                       is_active=user.is_active,)
+        users = await user_crud.get_all_users(limit=limit, offset=offset)
+        users_list = []
+        for user in users:
+            users_list.append(user["User"])
+        return users_list
 
 
 async def _update_user(updated_data: dict,
@@ -68,10 +69,13 @@ async def _update_user(updated_data: dict,
         return updated_user_id
 
 
-async def _delete_user(user_id: UUID, db) -> UUID:
+async def _delete_user(user_id_or_email: Union[UUID, EmailStr], db) -> UUID:
     async with db.begin():
         user_crud = UserCRUD(db)
-        deleted_user_id = await user_crud.delete(user_id=user_id)
+        if isinstance(user_id_or_email, UUID):
+            deleted_user_id = await user_crud.delete(user_id=user_id_or_email)
+        else:
+            deleted_user_id = await user_crud.delete(user_email=user_id_or_email)
         return deleted_user_id
 
 
@@ -115,22 +119,31 @@ async def _check_exists_by_email(email: str, db) -> bool:
 async def create_user(data: UserCreate, db: AsyncSession = Depends(get_db)):
     return await _create_new_user(data=data, db=db)
 
+
 @user_router.post("/check_exists")
 async def check_email_exists(email: str, db: AsyncSession = Depends(get_db)):
     return await _check_exists_by_email(email=email, db=db)
 
-@user_router.get("/by_id", response_model=GetUser)
-async def get_user_by_id(user_id: UUID, db: AsyncSession = Depends(get_db)):
-    return await _get_by_id(user_id=user_id, db=db)
 
-@user_router.get("/by_email", response_model=GetUser)
-async def get_user_by_email(user_email: EmailStr, db: AsyncSession = Depends(get_db)):
-    return await _get_by_email(user_email=user_email, db=db)
+@user_router.get("/get_all_users", response_model=list[GetUser])
+async def get_all_users(limit: Optional[int] = 10, offset: Optional[int] = 0,
+                        db: AsyncSession = Depends(get_db)):
+    return await _get_all_users(limit=limit, offset=offset, db=db)
+
+
+@user_router.get("/get_by_id_or_email", response_model=GetUser)
+async def get_user_by_id(user_id_or_email: Union[UUID, EmailStr],
+                         db: AsyncSession = Depends(get_db)):
+    return await _get_by_id_or_email(user_id_or_email=user_id_or_email, db=db)
+
 
 @user_router.put("/update", response_model=UpdatedUserResponse)
-async def update_user_data(updated_data: UserUpdate, db: AsyncSession = Depends(get_db)):
-    pass
+async def update_user_data(user_id: UUID,
+                           updated_data: UserUpdate,
+                           db: AsyncSession = Depends(get_db)):
+    return await _update_user(updated_data=updated_data, user_id=user_id, db=db)
+
 
 @user_router.delete("/delete", response_model=DeleteUserResponse)
 async def delete_user(user_id_or_email: Union[UUID, EmailStr], db: AsyncSession = Depends(get_db)):
-    pass
+    return await _delete_user(user_id_or_email=user_id_or_email)
