@@ -43,8 +43,8 @@ class UserCRUD:
         if update_user_id_row is not None:
             return update_user_id_row[0]
 
-    async def delete(self, user_id: Optional[UUID] = None,
-                     user_email: Optional[EmailStr] = None ) -> Union[UUID, None]:
+    async def deactivate(self, user_id: Optional[UUID] = None,
+                         user_email: Optional[EmailStr] = None ) -> Union[UUID, None]:
         if user_id:
             query = (update(User)
                     .where(and_(User.user_id == user_id, User.is_active == True))
@@ -56,9 +56,9 @@ class UserCRUD:
                     .values(is_active=False)
                     .returning(User.user_id))
         res = await self.db_session.execute(query)
-        deleted_user_id_row = res.fetchone()
-        if deleted_user_id_row is not None:
-            return deleted_user_id_row[0]
+        user_id_row = res.fetchone()
+        if user_id_row is not None:
+            return user_id_row[0]
 
     async def exists_by_email(self, email: str) -> bool:
         query = exists(User).where(User.email == email).select()

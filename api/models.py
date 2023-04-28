@@ -58,10 +58,12 @@ class UserCreate(BaseModel):
 
 class DeleteUserResponse(BaseModel):
     deleted_user_id: uuid.UUID
+    message: str
 
 
 class UpdatedUserResponse(BaseModel):
     updated_user_id: uuid.UUID
+    message: str
 
 
 class UserUpdate(BaseModel):

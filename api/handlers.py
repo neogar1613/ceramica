@@ -1,5 +1,6 @@
+from asyncpg.exceptions import UniqueViolationError
 from uuid import UUID
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from api.models import (
     UserCreate,
     GetUser,
@@ -14,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Union, Optional
 from db.crud import UserCRUD
 from db.session import get_db
+from api.exceptions import UserExistsError
 
 
 user_router = APIRouter()
@@ -22,10 +24,13 @@ user_router = APIRouter()
 async def _create_new_user(data: UserCreate, db) -> GetUser:
     async with db.begin():
         user_crud = UserCRUD(db)
-        user = await user_crud.create(username=data.username,
-                                      name=data.name,
-                                      surname=data.surname,
-                                      email=data.email,)
+        try:
+            user = await user_crud.create(username=data.username,
+                                        name=data.name,
+                                        surname=data.surname,
+                                        email=data.email,)
+        except Exception as e:
+            raise UserExistsError(err_msg=str(e.orig).split('DETAIL:')[1].strip())
         return GetUser(user_id=user.user_id,
                        username=user.username,
                        name=user.name,
@@ -69,14 +74,14 @@ async def _update_user(updated_data: dict,
         return updated_user_id
 
 
-async def _delete_user(user_id_or_email: Union[UUID, EmailStr], db) -> UUID:
+async def _deactivate_user(user_id_or_email: Union[UUID, EmailStr], db) -> UUID:
     async with db.begin():
         user_crud = UserCRUD(db)
         if isinstance(user_id_or_email, UUID):
-            deleted_user_id = await user_crud.delete(user_id=user_id_or_email)
+            user_id = await user_crud.deactivate(user_id=user_id_or_email)
         else:
-            deleted_user_id = await user_crud.delete(user_email=user_id_or_email)
-        return deleted_user_id
+            user_id = await user_crud.deactivate(user_email=user_id_or_email)
+        return user_id
 
 
 async def _check_exists_by_email(email: str, db) -> bool:
@@ -117,8 +122,11 @@ async def _check_exists_by_email(email: str, db) -> bool:
 
 @user_router.post("/create", response_model=GetUser)
 async def create_user(data: UserCreate, db: AsyncSession = Depends(get_db)):
-    return await _create_new_user(data=data, db=db)
-
+    try:
+        result = await _create_new_user(data=data, db=db)
+    except UserExistsError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.err_msg)
+    return result
 
 @user_router.post("/check_exists")
 async def check_email_exists(email: str, db: AsyncSession = Depends(get_db)):
@@ -141,9 +149,20 @@ async def get_user_by_id(user_id_or_email: Union[UUID, EmailStr],
 async def update_user_data(user_id: UUID,
                            updated_data: UserUpdate,
                            db: AsyncSession = Depends(get_db)):
-    return await _update_user(updated_data=updated_data, user_id=user_id, db=db)
+    updated_user_id = await _update_user(updated_data=updated_data, user_id=user_id, db=db)
+    if updated_user_id is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found or not active")
+    return UpdatedUserResponse(updated_user_id=updated_user_id)
 
 
 @user_router.delete("/delete", response_model=DeleteUserResponse)
 async def delete_user(user_id_or_email: Union[UUID, EmailStr], db: AsyncSession = Depends(get_db)):
-    return await _delete_user(user_id_or_email=user_id_or_email)
+    pass
+
+
+@user_router.patch("/deactivate", response_model=DeleteUserResponse)
+async def deactivate_user(user_id_or_email: Union[UUID, EmailStr], db: AsyncSession = Depends(get_db)):
+    deactivated_user_id = await _deactivate_user(user_id_or_email=user_id_or_email, db=db)
+    if deactivated_user_id is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found or not active")
+    return DeleteUserResponse(deactivated_user_id=deactivated_user_id, message="User deactivated")
