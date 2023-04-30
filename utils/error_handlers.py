@@ -50,16 +50,20 @@ class RaisebleDetailError(Exception):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail=self.obj)
 
+class DefaultCustomError(RaisebleError):
+    """ """
 
-def raise_custom_exception(err, custom_exception, msg: Optional[str] = None):
+
+def raise_custom_exception(err = None,
+                           custom_exception = DefaultCustomError,
+                           msg = 'Network error',
+                           error_type = 'Raisable'):
     # Имя вызывающей функции
     err_func_name: str = inspect.stack()[1][3]
     error_in = f'{__name__} | {err_func_name}'
-    # ошибка BaseServerError
-    if err:
+    if error_type == 'Base':
         raise custom_exception(err=err, error_in=error_in)
-    # ошибка RaisableError
-    else:
+    elif error_type == 'Raisable':
         raise custom_exception(msg=msg)
 
 

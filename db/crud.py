@@ -1,7 +1,7 @@
 from typing import Union, Optional
 from uuid import UUID
 from pydantic import EmailStr
-from sqlalchemy import and_, update, select, exists
+from sqlalchemy import and_, update, delete, select, exists
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.models import User
 
@@ -28,7 +28,7 @@ class UserCRUD:
             return user_row[0]
 
     async def get_all_users(self, limit: int, offset: int) -> Union[list[User], None]:
-        query = select(User)
+        query = select(User).limit(limit).offset(offset)
         res = await self.db_session.execute(query)
         user_rows = res.fetchall()
         return user_rows
@@ -43,6 +43,23 @@ class UserCRUD:
         if update_user_id_row is not None:
             return update_user_id_row[0]
 
+    async def activate(self, user_id: Optional[UUID] = None,
+                       user_email: Optional[EmailStr] = None ) -> Union[UUID, None]:
+        if user_id:
+            query = (update(User)
+                    .where(and_(User.user_id == user_id, User.is_active == False))
+                    .values(is_active=True)
+                    .returning(User.user_id))
+        elif user_email:
+            query = (update(User)
+                    .where(and_(User.email == user_email, User.is_active == False))
+                    .values(is_active=True)
+                    .returning(User.user_id))
+        res = await self.db_session.execute(query)
+        user_id_row = res.fetchone()
+        if user_id_row is not None:
+            return user_id_row[0]
+
     async def deactivate(self, user_id: Optional[UUID] = None,
                          user_email: Optional[EmailStr] = None ) -> Union[UUID, None]:
         if user_id:
@@ -54,6 +71,21 @@ class UserCRUD:
             query = (update(User)
                     .where(and_(User.email == user_email, User.is_active == True))
                     .values(is_active=False)
+                    .returning(User.user_id))
+        res = await self.db_session.execute(query)
+        user_id_row = res.fetchone()
+        if user_id_row is not None:
+            return user_id_row[0]
+
+    async def delete(self, user_id: Optional[UUID] = None,
+                     user_email: Optional[EmailStr] = None ) -> Union[UUID, None]:
+        if user_id:
+            query = (delete(User)
+                    .where(User.user_id == user_id)
+                    .returning(User.user_id))
+        elif user_email:
+            query = (delete(User)
+                    .where(User.email == user_email)
                     .returning(User.user_id))
         res = await self.db_session.execute(query)
         user_id_row = res.fetchone()

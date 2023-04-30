@@ -1,3 +1,11 @@
-class UserExistsError(Exception):
-    def __init__(self, err_msg):
-        self.err_msg = err_msg
+from utils.error_handlers import BaseErrorServer, RaisebleError
+
+
+class SomeTestError(BaseErrorServer):
+    """ """
+
+class SomeRaisableError(RaisebleError):
+    """ """
+
+class UserExists(RaisebleError):
+    """ """

@@ -57,7 +57,7 @@ class UserCreate(BaseModel):
 
 
 class DeleteUserResponse(BaseModel):
-    deleted_user_id: uuid.UUID
+    user_id: uuid.UUID
     message: str
 
 
