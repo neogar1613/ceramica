@@ -8,6 +8,9 @@ from uuid import uuid4
 
 test_user_id = "98183338-6315-43ce-87ae-f8a2bf901094"
 test_user_email = "somete2@domainte.kz"
+test_update_user_id = "4fc6329e-29c5-4eb9-a01e-776f5320ff53"
+test_update_user_email = "update@domainte.kz"
+
 
 async def test_create_user(client, get_user_from_database):
     user_data = {
@@ -69,7 +72,7 @@ async def test_get_all_users(client, create_user_in_database):
     assert len(users) == 0
 
 
-async def test_get_by_id_or_email_user(client, create_user_in_database, get_user_from_database):
+async def test_get_by_id_or_email_user(client, create_user_in_database):
     user1_data = {
         "user_id": test_user_id,
         "username": "art2000te",
@@ -108,32 +111,58 @@ async def test_get_by_id_or_email_user(client, create_user_in_database, get_user
 
 
 async def test_update_user(client, create_user_in_database, get_user_from_database):
-    pass
-    # user_data = {
-    #     "user_id": "4fc6329e-29c5-4eb9-a01e-776f5320ff53",
-    #     "username": "art2000te",
-    #     "name": "ArtemTE",
-    #     "surname": "GorbunovTE",
-    #     "email": "somete@domainte.kz",
-    #     "is_active": True
-    # }
-    # await create_user_in_database(**user_data)
-    # resp = client.delete(f"/user/delete/?user_id_or_email={user_data['user_id']}")
-    # data_from_resp = resp.json()
-    # assert resp.status_code == 200
-    # users_from_db = await get_user_from_database(data_from_resp["user_id"])
-    # assert len(users_from_db) == 0
+    user_data = {"user_id": test_update_user_id,
+                 "username": "art2000te",
+                 "name": "ArtemTE",
+                 "surname": "GorbunovTE",
+                 "email": test_update_user_email,
+                 "is_active": True}
+    await create_user_in_database(**user_data)
+
+    users_from_db = await get_user_from_database(user_data["user_id"])
+    assert len(users_from_db) == 1
+    upd_data = {"name": "newname",
+                "surname": "newsurname"}
+    
+    resp = client.put(f"/user/update?user_id={user_data['user_id']}", content=json.dumps(upd_data))
+    assert resp.status_code == 200
+    users_from_db = await get_user_from_database(user_data["user_id"])
+    assert len(users_from_db) == 1
+    updated_user_from_db = dict(users_from_db[0])
+    assert updated_user_from_db["name"] == upd_data["name"]
+    assert updated_user_from_db["surname"] == upd_data["surname"]
+
+
+async def test_activate_deactivate_user(client, create_user_in_database, get_user_from_database):
+    user_data = {"user_id": uuid4(),
+                 "username": "deactivatetest",
+                 "name": "deactivate",
+                 "surname": "test",
+                 "email": "de@activate.net",
+                 "is_active": True}
+    await create_user_in_database(**user_data)
+    resp = client.patch(f"user/deactivate?user_id_or_email={user_data['user_id']}")
+    assert resp.status_code == 200
+    users_from_db = await get_user_from_database(user_data["user_id"])
+    assert len(users_from_db) == 1
+    user_from_db = dict(users_from_db[0])
+    assert user_from_db["is_active"] == False
+
+    resp = client.patch(f"user/activate?user_id_or_email={user_from_db['user_id']}")
+    assert resp.status_code == 200
+    users_from_db = await get_user_from_database(user_data["user_id"])
+    assert len(users_from_db) == 1
+    user_from_db = dict(users_from_db[0])
+    assert user_from_db["is_active"] == True
 
 
 async def test_delete_user(client, create_user_in_database, get_user_from_database):
-    user_data = {
-        "user_id": uuid4(),
-        "username": "art2000te",
-        "name": "ArtemTE",
-        "surname": "GorbunovTE",
-        "email": "somete@domainte.kz",
-        "is_active": True
-    }
+    user_data = {"user_id": uuid4(),
+                 "username": "art2000te",
+                 "name": "ArtemTE",
+                 "surname": "GorbunovTE",
+                 "email": "somete@domainte.kz",
+                 "is_active": True}
     await create_user_in_database(**user_data)
     resp = client.delete(f"/user/delete/?user_id_or_email={user_data['user_id']}")
     data_from_resp = resp.json()
