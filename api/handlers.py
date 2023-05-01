@@ -80,17 +80,20 @@ async def get_all_users_handler(limit: Optional[int] = 10, offset: Optional[int]
 @user_router.get("/get_by_id_or_email", response_model=GetUser)
 async def get_user_handler(user_id_or_email: Union[UUID, EmailStr],
                            db: AsyncSession = Depends(get_db)):
-    return await get_by_id_or_email(user_id_or_email=user_id_or_email, db=db)
+    user = await get_by_id_or_email(user_id_or_email=user_id_or_email, db=db)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found or not active")
+    return user
 
 
 @user_router.put("/update", response_model=UpdatedUserResponse)
 async def update_user_data_handler(user_id: UUID,
                                    updated_data: UserUpdate,
                                    db: AsyncSession = Depends(get_db)):
-    updated_user_id = await update_user(updated_data=updated_data, user_id=user_id, db=db)
+    updated_user_id = await update_user(updated_data=updated_data.dict(), user_id=user_id, db=db)
     if updated_user_id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found or not active")
-    return UpdatedUserResponse(updated_user_id=updated_user_id)
+    return UpdatedUserResponse(updated_user_id=updated_user_id, message='User updated')
 
 
 @user_router.patch("/activate", response_model=DeleteUserResponse)

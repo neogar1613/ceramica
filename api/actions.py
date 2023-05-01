@@ -29,13 +29,15 @@ async def create_new_user(data: UserCreate, db) -> GetUser:
                        is_active=user.is_active,)
 
 
-async def get_by_id_or_email(user_id_or_email: Union[UUID, EmailStr], db) -> GetUser:
+async def get_by_id_or_email(user_id_or_email: Union[UUID, EmailStr], db) -> Union[GetUser, None]:
     async with db.begin():
         user_crud = UserCRUD(db)
         if isinstance(user_id_or_email, UUID):
             user = await user_crud.get_by_id_or_email(user_id=user_id_or_email)
         else:
             user = await user_crud.get_by_id_or_email(user_email=user_id_or_email)
+        if user is None:
+            return None
         return GetUser(user_id=user.user_id,
                        username=user.username,
                        name=user.name,
@@ -55,8 +57,10 @@ async def get_all_users(limit: int, offset: int, db) -> list[GetUser]:
 
 
 async def update_user(updated_data: dict,
-                       user_id: UUID,
-                       db) -> Union[UUID, None]:
+                      user_id: UUID,
+                      db) -> Union[UUID, None]:
+    # Фильтруем все None значения
+    updated_data: dict = {key: value for key, value in updated_data.items() if value is not None}
     async with db.begin():
         user_crud = UserCRUD(db)
         updated_user_id = await user_crud.update(user_id=user_id,
