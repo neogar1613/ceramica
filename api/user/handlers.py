@@ -51,6 +51,7 @@ async def get_all_users_handler(limit: Optional[int] = 10, offset: Optional[int]
 
 @user_router.get("/get_by_id_or_email", response_model=GetUser)
 async def get_user_handler(user_id_or_email: Union[UUID, EmailStr],
+                           current_user = Depends(get_current_user_from_token),
                            db: AsyncSession = Depends(get_db)):
     user = await get_by_id_or_email(user_id_or_email=user_id_or_email, db=db)
     if user is None:
@@ -67,6 +68,7 @@ async def get_current_user_handler(current_user = Depends(get_current_user_from_
 @user_router.put("/update", response_model=UpdatedUserResponse)
 async def update_user_data_handler(user_id: UUID,
                                    updated_data: UserUpdate,
+                                   current_user = Depends(get_current_user_from_token),
                                    db: AsyncSession = Depends(get_db)):
     updated_user_id = await update_user(updated_data=updated_data.dict(), user_id=user_id, db=db)
     if updated_user_id is None:
@@ -75,7 +77,9 @@ async def update_user_data_handler(user_id: UUID,
 
 
 @user_router.patch("/activate", response_model=DeleteUserResponse)
-async def activate_user_handler(user_id_or_email: Union[UUID, EmailStr], db: AsyncSession = Depends(get_db)):
+async def activate_user_handler(user_id_or_email: Union[UUID, EmailStr],
+                                current_user = Depends(get_current_user_from_token),
+                                db: AsyncSession = Depends(get_db)):
     activated_user_id = await activate_user(user_id_or_email=user_id_or_email, db=db)
     if activated_user_id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found or active")
@@ -83,7 +87,9 @@ async def activate_user_handler(user_id_or_email: Union[UUID, EmailStr], db: Asy
 
 
 @user_router.patch("/deactivate", response_model=DeleteUserResponse)
-async def deactivate_user_handler(user_id_or_email: Union[UUID, EmailStr], db: AsyncSession = Depends(get_db)):
+async def deactivate_user_handler(user_id_or_email: Union[UUID, EmailStr],
+                                  current_user = Depends(get_current_user_from_token),
+                                  db: AsyncSession = Depends(get_db)):
     deactivated_user_id = await deactivate_user(user_id_or_email=user_id_or_email, db=db)
     if deactivated_user_id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found or not active")
@@ -91,7 +97,9 @@ async def deactivate_user_handler(user_id_or_email: Union[UUID, EmailStr], db: A
 
 
 @user_router.delete("/delete", response_model=DeleteUserResponse)
-async def delete_user_handler(user_id_or_email: Union[UUID, EmailStr], db: AsyncSession = Depends(get_db)):
+async def delete_user_handler(user_id_or_email: Union[UUID, EmailStr],
+                              current_user = Depends(get_current_user_from_token),
+                              db: AsyncSession = Depends(get_db)):
     deleted_user_id = await delete_user(user_id_or_email=user_id_or_email, db=db)
     if deleted_user_id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
