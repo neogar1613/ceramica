@@ -1,6 +1,6 @@
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, status
-from api.models import (
+from api.user.models import (
     UserCreate,
     GetUser,
     UpdatedUserResponse,
@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Union, Optional
 
 from db.session import get_db
-from api.actions import (
+from api.user.actions import (
     create_new_user,
     check_email_exists,
     get_all_users,
@@ -23,14 +23,11 @@ from api.actions import (
     deactivate_user,
     delete_user
 )
-from api.exceptions import UserExists
+from api.user.exceptions import UserExists
 from utils.error_handlers import raise_custom_exception
 
 
 user_router = APIRouter()
-
-
-
 
 # def check_user_permissions(target_user: User, current_user: User) -> bool:
 #     if PortalRole.ROLE_PORTAL_SUPERADMIN in current_user.roles:

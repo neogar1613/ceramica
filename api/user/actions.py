@@ -2,12 +2,13 @@ from pydantic import EmailStr
 from typing import Union
 from uuid import UUID
 
-from api.models import (
+from api.user.models import (
     UserCreate,
     GetUser
 )
-from api.exceptions import UserExists
+from api.user.exceptions import UserExists
 from db.crud import UserCRUD
+from utils.hashing import Hasher
 from utils.error_handlers import raise_custom_exception
 
 
@@ -18,7 +19,8 @@ async def create_new_user(data: UserCreate, db) -> GetUser:
             user = await user_crud.create(username=data.username,
                                           name=data.name,
                                           surname=data.surname,
-                                          email=data.email,)
+                                          email=data.email,
+                                          hashed_password=Hasher.get_password_hash(plain_password=data.password))
         except Exception:
             raise UserExists(msg='User exists')
         return GetUser(user_id=user.user_id,

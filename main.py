@@ -1,23 +1,26 @@
 import uvicorn
 from fastapi import FastAPI, status, APIRouter
-from api.handlers import user_router
+from api.user.handlers import user_router
+from api.auth.handlers import auth_router
 from utils.custom_middlewares import catch_exceptions_middleware
 from settings import DOCS_URL, REDOC_URL
 
 
 app = FastAPI(title="Ceramica API",
-              version='0.0.4',
+              version='0.0.5',
               description="API for Ceramica application",
               docs_url=DOCS_URL,
               redoc_url=REDOC_URL)
 
 router = APIRouter()
 router.include_router(user_router, prefix="/user", tags=["user"])
+router.include_router(auth_router, prefix="/auth", tags=["auth"])
 
 
 @app.get("/")
 def root():
     return status.HTTP_200_OK
+
 
 # Кастомные middlewares
 app.middleware('http')(catch_exceptions_middleware)

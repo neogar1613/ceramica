@@ -33,6 +33,7 @@ class UserCreate(BaseModel):
     name: str
     surname: str
     email: EmailStr
+    password: str
 
     @validator("username")
     def username_valid(cls, value):
