@@ -24,36 +24,11 @@ from api.user.actions import (
     delete_user
 )
 from api.user.exceptions import UserExists
+from api.auth.actions import get_current_user_from_token
 from utils.error_handlers import raise_custom_exception
 
 
 user_router = APIRouter()
-
-# def check_user_permissions(target_user: User, current_user: User) -> bool:
-#     if PortalRole.ROLE_PORTAL_SUPERADMIN in current_user.roles:
-#         raise HTTPException(
-#             status_code=406, detail="Superadmin cannot be deleted via API."
-#         )
-#     if target_user.user_id != current_user.user_id:
-#         # check admin role
-#         if not {
-#             PortalRole.ROLE_PORTAL_ADMIN,
-#             PortalRole.ROLE_PORTAL_SUPERADMIN,
-#         }.intersection(current_user.roles):
-#             return False
-#         # check admin deactivate superadmin attempt
-#         if (
-#             PortalRole.ROLE_PORTAL_SUPERADMIN in target_user.roles
-#             and PortalRole.ROLE_PORTAL_ADMIN in current_user.roles
-#         ):
-#             return False
-#         # check admin deactivate admin attempt
-#         if (
-#             PortalRole.ROLE_PORTAL_ADMIN in target_user.roles
-#             and PortalRole.ROLE_PORTAL_ADMIN in current_user.roles
-#         ):
-#             return False
-#     return True
 
 
 @user_router.post("/create", response_model=GetUser)
@@ -81,6 +56,12 @@ async def get_user_handler(user_id_or_email: Union[UUID, EmailStr],
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found or not active")
     return user
+
+
+@user_router.get("/me", response_model=GetUser)
+async def get_current_user_handler(current_user = Depends(get_current_user_from_token),
+                                   db: AsyncSession = Depends(get_db)):
+    return GetUser(**current_user)
 
 
 @user_router.put("/update", response_model=UpdatedUserResponse)
