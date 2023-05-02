@@ -1,18 +1,17 @@
 import asyncio
-import os
-from typing import Any
-from typing import Generator
-
 import asyncpg
+import os
 import pytest
 import pytest_asyncio
+import sys
+import inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker
 from starlette.testclient import TestClient
-
-import sys
-import inspect
+from typing import Any
+from typing import Generator
+from uuid import UUID
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
@@ -20,12 +19,11 @@ sys.path.insert(0, parentdir)
 
 from settings import TEST_DATABASE_URL
 from db.session import get_db
+from api.auth.actions import create_access_token
 from main import app
 
 
-CLEAN_TABLES = [
-    "users",
-]
+CLEAN_TABLES = ["users",]
 
 
 @pytest.fixture(scope="session")
@@ -75,7 +73,6 @@ async def client() -> Generator[TestClient, Any, None]:
     Create a new FastAPI TestClient that uses the `db_session` fixture to override
     the `get_db` dependency that is injected into routes.
     """
-
     app.dependency_overrides[get_db] = _get_test_db
     with TestClient(app) as client:
         yield client
@@ -83,9 +80,7 @@ async def client() -> Generator[TestClient, Any, None]:
 
 @pytest_asyncio.fixture(scope="session")
 async def asyncpg_pool():
-    pool = await asyncpg.create_pool(
-        "".join(TEST_DATABASE_URL.split("+asyncpg"))
-    )
+    pool = await asyncpg.create_pool("".join(TEST_DATABASE_URL.split("+asyncpg")))
     yield pool
     await pool.close()
 
@@ -94,40 +89,31 @@ async def asyncpg_pool():
 async def get_user_from_database(asyncpg_pool):
     async def get_user_from_database_by_uuid(user_id: str):
         async with asyncpg_pool.acquire() as connection:
-            return await connection.fetch(
-                """SELECT * FROM users WHERE user_id = $1;""", user_id
-            )
-
+            return await connection.fetch("""SELECT * FROM users WHERE user_id = $1;""", user_id)
     return get_user_from_database_by_uuid
 
 
 @pytest_asyncio.fixture
 async def create_user_in_database(asyncpg_pool):
-    async def create_user_in_database(
-        user_id: str,
-        username: str,
-        name: str,
-        surname: str,
-        email: str,
-        is_active: bool
-    ):
+    async def create_user_in_database(user_id: str,
+                                      username: str,
+                                      name: str,
+                                      surname: str,
+                                      email: str,
+                                      hashed_password: str,
+                                      is_active: bool):
         async with asyncpg_pool.acquire() as connection:
-            return await connection.execute(
-                """INSERT INTO users VALUES ($1, $2, $3, $4, $5, $6)""",
-                user_id,
-                username,
-                name,
-                surname,
-                email,
-                is_active
-            )
-
+            return await connection.execute("""INSERT INTO users VALUES ($1, $2, $3, $4, $5, $6, $7)""",
+                                            user_id,
+                                            username,
+                                            name,
+                                            surname,
+                                            email,
+                                            hashed_password,
+                                            is_active)
     return create_user_in_database
 
 
-# def create_test_auth_headers_for_user(email: str) -> dict[str, str]:
-#     access_token = create_access_token(
-#         data={"sub": email},
-#         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
-#     )
-#     return {"Authorization": f"Bearer {access_token}"}
+def create_test_auth_headers_for_user(user_id: UUID) -> dict[str, str]:
+    access_token = create_access_token(data={"sub": str(user_id)})
+    return {"Authorization": f"Bearer {access_token}"}

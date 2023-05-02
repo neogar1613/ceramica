@@ -1,6 +1,8 @@
 import json
 from uuid import uuid4
 
+from utils.hashing import Hasher
+
 # pytest_plugins = ('pytest_asyncio',)
 
 # @pytest.mark.asyncio
@@ -13,12 +15,11 @@ test_update_user_email = "update@domainte.kz"
 
 
 async def test_create_user(client, get_user_from_database):
-    user_data = {
-        "username": "art2000te",
-        "name": "ArtemTE",
-        "surname": "GorbunovTE",
-        "email": "somete@domainte.kz"
-    }
+    user_data = {"username": "art2000te",
+                 "name": "ArtemTE",
+                 "surname": "GorbunovTE",
+                 "email": "somete@domainte.kz",
+                 "password": "admin123"}
     resp = client.post("/user/create", content=json.dumps(user_data))
     data_from_resp = resp.json()
     assert resp.status_code == 200
@@ -39,23 +40,23 @@ async def test_create_user(client, get_user_from_database):
 
 
 async def test_get_all_users(client, create_user_in_database):
-    user1_data = {
-        "user_id": test_user_id,
-        "username": "art2000te",
-        "name": "ArtemTE",
-        "surname": "GorbunovTE",
-        "email": "somete@domainte.kz",
-        "is_active": True
-    }
+    hashed_password = Hasher.get_password_hash(plain_password="admin123")
+    user1_data = {"user_id": test_user_id,
+                  "username": "art2000te",
+                  "name": "ArtemTE",
+                  "surname": "GorbunovTE",
+                  "email": "somete@domainte.kz",
+                  "hashed_password": hashed_password,
+                  "is_active": True}
     await create_user_in_database(**user1_data)
-    user2_data = {
-        "user_id": uuid4(),
-        "username": "nik2000os",
-        "name": "Nikke",
-        "surname": "Volod",
-        "email": test_user_email,
-        "is_active": True
-    }
+    hashed_password = Hasher.get_password_hash(plain_password="admin123")
+    user2_data = {"user_id": uuid4(),
+                  "username": "nik2000os",
+                  "name": "Nikke",
+                  "surname": "Volod",
+                  "email": test_user_email,
+                  "hashed_password": hashed_password,
+                  "is_active": True}
     await create_user_in_database(**user2_data)
     
     resp_get = client.get(f"/user/get_all_users?limit=10&offset=0")
@@ -73,23 +74,23 @@ async def test_get_all_users(client, create_user_in_database):
 
 
 async def test_get_by_id_or_email_user(client, create_user_in_database):
-    user1_data = {
-        "user_id": test_user_id,
-        "username": "art2000te",
-        "name": "ArtemTE",
-        "surname": "GorbunovTE",
-        "email": "somete@domainte.kz",
-        "is_active": True
-    }
+    hashed_password = Hasher.get_password_hash(plain_password="admin123")
+    user1_data = {"user_id": test_user_id,
+                  "username": "art2000te",
+                  "name": "ArtemTE",
+                  "surname": "GorbunovTE",
+                  "email": "somete@domainte.kz",
+                  "hashed_password": hashed_password,
+                  "is_active": True}
     await create_user_in_database(**user1_data)
-    user2_data = {
-        "user_id": uuid4(),
-        "username": "nik2000os",
-        "name": "Nikke",
-        "surname": "Volod",
-        "email": test_user_email,
-        "is_active": True
-    }
+    hashed_password = Hasher.get_password_hash(plain_password="admin123")
+    user2_data = {"user_id": uuid4(),
+                  "username": "nik2000os",
+                  "name": "Nikke",
+                  "surname": "Volod",
+                  "email": test_user_email,
+                  "hashed_password": hashed_password,
+                  "is_active": True}
     await create_user_in_database(**user2_data)
     
     resp_by_id = client.get(f"/user/get_by_id_or_email?user_id_or_email={test_user_id}")
@@ -111,11 +112,13 @@ async def test_get_by_id_or_email_user(client, create_user_in_database):
 
 
 async def test_update_user(client, create_user_in_database, get_user_from_database):
+    hashed_password = Hasher.get_password_hash(plain_password="admin123")
     user_data = {"user_id": test_update_user_id,
                  "username": "art2000te",
                  "name": "ArtemTE",
                  "surname": "GorbunovTE",
                  "email": test_update_user_email,
+                 "hashed_password": hashed_password,
                  "is_active": True}
     await create_user_in_database(**user_data)
 
@@ -134,11 +137,13 @@ async def test_update_user(client, create_user_in_database, get_user_from_databa
 
 
 async def test_activate_deactivate_user(client, create_user_in_database, get_user_from_database):
+    hashed_password = Hasher.get_password_hash(plain_password="admin123")
     user_data = {"user_id": uuid4(),
                  "username": "deactivatetest",
                  "name": "deactivate",
                  "surname": "test",
                  "email": "de@activate.net",
+                 "hashed_password": hashed_password,
                  "is_active": True}
     await create_user_in_database(**user_data)
     resp = client.patch(f"user/deactivate?user_id_or_email={user_data['user_id']}")
@@ -157,11 +162,13 @@ async def test_activate_deactivate_user(client, create_user_in_database, get_use
 
 
 async def test_delete_user(client, create_user_in_database, get_user_from_database):
+    hashed_password = Hasher.get_password_hash(plain_password="admin123")
     user_data = {"user_id": uuid4(),
                  "username": "art2000te",
                  "name": "ArtemTE",
                  "surname": "GorbunovTE",
                  "email": "somete@domainte.kz",
+                 "hashed_password": hashed_password,
                  "is_active": True}
     await create_user_in_database(**user_data)
     resp = client.delete(f"/user/delete/?user_id_or_email={user_data['user_id']}")
