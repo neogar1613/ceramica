@@ -24,6 +24,15 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 
+async def authenticate_user(email: str, password: str, db: AsyncSession) -> Union[User, None]:
+    user = await _get_user_by_email_for_auth(email=email, db=db)
+    if user is None:
+        return None
+    if not Hasher.verify_password(password, user.hashed_password):
+        return None
+    return user
+
+
 async def _get_user_by_email_for_auth(email: Optional[str] = None,
                                       user_id: Optional[str] = None,
                                       db: AsyncSession = None):
@@ -34,15 +43,6 @@ async def _get_user_by_email_for_auth(email: Optional[str] = None,
         elif email:
             return await crud.get_by_id_or_email(user_email=email)
         return None
-
-
-async def authenticate_user(email: str, password: str, db: AsyncSession) -> Union[User, None]:
-    user = await _get_user_by_email_for_auth(email=email, db=db)
-    if user is None:
-        return None
-    if not Hasher.verify_password(password, user.hashed_password):
-        return None
-    return user
 
 
 async def get_current_user_from_token(token: str = Depends(oauth2_scheme),
@@ -56,7 +56,7 @@ async def get_current_user_from_token(token: str = Depends(oauth2_scheme),
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    user = await _get_user_by_email_for_auth(user_id=user_id, session=db)
+    user = await _get_user_by_email_for_auth(user_id=user_id, db=db)
     if user is None:
         raise credentials_exception
     return user

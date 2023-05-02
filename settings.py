@@ -22,7 +22,7 @@ DEBUG = os.environ.get('DEBUG', True)
 DATABASE_URL = os.environ.get('DATABASE_URL', "postgresql+asyncpg://postgres:postgres@0.0.0.0:5433/postgres")
 TEST_DATABASE_URL = os.environ.get('TEST_DATABASE_URL', "postgresql+asyncpg://postgres_test:postgres_test@0.0.0.0:5434/postgres_test")
 
-ACCESS_TOKEN_EXPIRE_MINUTES = os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES', 2)
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES', 2))
 JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', "mkdlnfjkger7647y534j0tJJFHJE90e9e")
-JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', "sha256")
+JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', "HS256")
 

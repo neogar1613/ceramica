@@ -61,7 +61,7 @@ async def get_user_handler(user_id_or_email: Union[UUID, EmailStr],
 @user_router.get("/me", response_model=GetUser)
 async def get_current_user_handler(current_user = Depends(get_current_user_from_token),
                                    db: AsyncSession = Depends(get_db)):
-    return GetUser(**current_user)
+    return current_user
 
 
 @user_router.put("/update", response_model=UpdatedUserResponse)
