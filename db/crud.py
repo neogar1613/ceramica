@@ -4,6 +4,7 @@ from pydantic import EmailStr
 from sqlalchemy import and_, update, delete, select, exists
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.models import User
+from api.user.models import UserRoles
 
 
 class UserCRUD:
@@ -20,6 +21,7 @@ class UserCRUD:
                         name=name,
                         surname=surname,
                         email=email,
+                        roles=[UserRoles.ROLE_USER, ],
                         hashed_password=hashed_password)
         self.db_session.add(new_user)
         await self.db_session.flush()

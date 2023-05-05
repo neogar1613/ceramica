@@ -9,8 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker
 from starlette.testclient import TestClient
-from typing import Any
-from typing import Generator
+from typing import Any, Generator, Optional
 from uuid import UUID
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -20,6 +19,7 @@ sys.path.insert(0, parentdir)
 from settings import TEST_DATABASE_URL
 from db.session import get_db
 from api.auth.actions import create_access_token
+from api.user.models import UserRoles
 from main import app
 
 
@@ -101,15 +101,18 @@ async def create_user_in_database(asyncpg_pool):
                                       surname: str,
                                       email: str,
                                       hashed_password: str,
-                                      is_active: bool):
+                                      is_active: bool,
+                                      roles: Optional[list] = [UserRoles.ROLE_USER]):
         async with asyncpg_pool.acquire() as connection:
-            return await connection.execute("""INSERT INTO users VALUES ($1, $2, $3, $4, $5, $6, $7)""",
+            return await connection.execute(
+            """INSERT INTO users VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""",
                                             user_id,
                                             username,
                                             name,
                                             surname,
                                             email,
                                             hashed_password,
+                                            roles,
                                             is_active)
     return create_user_in_database
 

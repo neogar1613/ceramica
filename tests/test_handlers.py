@@ -219,3 +219,13 @@ async def test_delete_user(client,
     assert resp.status_code == 200
     users_from_db = await get_user_from_database(data_from_resp["user_id"])
     assert len(users_from_db) == 0
+
+
+async def test_invalid_token(client):
+    invalid_token = create_test_auth_headers_for_user(user_id=test_user_id)
+    invalid_token['Authorization'] = invalid_token['Authorization'] + 'SOMEstring123'
+    resp = client.delete(f"/user/delete/?user_id_or_email=unkown@mail.ya",
+                         headers=invalid_token)
+    data_from_resp = resp.json()
+    assert resp.status_code == 401
+    assert data_from_resp == {"detail": "Could not validate credentials"}

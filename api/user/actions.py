@@ -4,7 +4,8 @@ from uuid import UUID
 
 from api.user.models import (
     UserCreate,
-    GetUser
+    GetUser,
+    UserRoles
 )
 from api.user.exceptions import UserExists
 from db.crud import UserCRUD
@@ -14,15 +15,16 @@ from utils.error_handlers import raise_custom_exception
 
 async def create_new_user(data: UserCreate, db) -> GetUser:
     async with db.begin():
+        pwd_hash = Hasher.get_password_hash(plain_password=data.password)
         user_crud = UserCRUD(db)
         try:
             user = await user_crud.create(username=data.username,
                                           name=data.name,
                                           surname=data.surname,
                                           email=data.email,
-                                          hashed_password=Hasher.get_password_hash(plain_password=data.password))
+                                          hashed_password=pwd_hash)
         except Exception:
-            raise UserExists(msg='User exists')
+            raise UserExists(msg='User exists or other db error')
         return GetUser(user_id=user.user_id,
                        username=user.username,
                        name=user.name,
@@ -40,6 +42,7 @@ async def get_by_id_or_email(user_id_or_email: Union[UUID, EmailStr], db) -> Uni
             user = await user_crud.get_by_id_or_email(user_email=user_id_or_email)
         if user is None:
             return None
+        print(f'user_id: {user.user_id}, user_roles: {user.roles}')
         return GetUser(user_id=user.user_id,
                        username=user.username,
                        name=user.name,

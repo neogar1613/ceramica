@@ -1,5 +1,6 @@
 import re
 import uuid
+from enum import Enum
 from fastapi import HTTPException, status
 from pydantic import (
     BaseModel,
@@ -17,6 +18,12 @@ class DefaultModel(BaseModel):
     """ Общий конфиг для всех моделей """
     class Config:
         orm_mode = True # Всё к JSON
+
+
+class UserRoles(str, Enum):
+    ROLE_USER = "ROLE_USER"
+    ROLE_ADMIN = "ROLE_ADMIN"
+    ROLE_SUPERADMIN = "ROLE_SUPERADMIN"
 
 
 class GetUser(DefaultModel):
