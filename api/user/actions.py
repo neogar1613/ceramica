@@ -10,7 +10,6 @@ from api.user.models import (
 from api.user.exceptions import UserExists
 from db.crud import UserCRUD
 from utils.hashing import Hasher
-from utils.error_handlers import raise_custom_exception
 
 
 async def create_new_user(data: UserCreate, db) -> GetUser:

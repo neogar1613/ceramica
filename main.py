@@ -7,7 +7,7 @@ from settings import DOCS_URL, REDOC_URL
 
 
 app = FastAPI(title="Ceramica API",
-              version='0.0.5',
+              version='0.0.6',
               description="API for Ceramica application",
               docs_url=DOCS_URL,
               redoc_url=REDOC_URL)

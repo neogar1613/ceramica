@@ -1,11 +1,5 @@
-from utils.error_handlers import BaseErrorServer, RaisebleError
+from utils.error_handlers import RaisebleError
 
-
-class SomeTestError(BaseErrorServer):
-    """ """
-
-class SomeRaisableError(RaisebleError):
-    """ """
 
 class UserExists(RaisebleError):
     """ """

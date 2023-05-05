@@ -24,8 +24,11 @@ from api.user.actions import (
     delete_user
 )
 from api.user.exceptions import UserExists
-from api.auth.actions import get_current_user_from_token
-from utils.error_handlers import raise_custom_exception
+from api.auth.actions import (
+    get_current_user_from_token,
+    get_user_for_auth,
+    check_user_permissions
+)
 
 
 user_router = APIRouter()
@@ -80,6 +83,9 @@ async def update_user_data_handler(user_id: UUID,
 async def activate_user_handler(user_id_or_email: Union[UUID, EmailStr],
                                 current_user = Depends(get_current_user_from_token),
                                 db: AsyncSession = Depends(get_db)):
+    target_user = await get_user_for_auth(user_id_or_email=user_id_or_email, db=db)
+    if not check_user_permissions(target_user=target_user, current_user=current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     activated_user_id = await activate_user(user_id_or_email=user_id_or_email, db=db)
     if activated_user_id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found or active")
@@ -90,6 +96,9 @@ async def activate_user_handler(user_id_or_email: Union[UUID, EmailStr],
 async def deactivate_user_handler(user_id_or_email: Union[UUID, EmailStr],
                                   current_user = Depends(get_current_user_from_token),
                                   db: AsyncSession = Depends(get_db)):
+    target_user = await get_user_for_auth(user_id_or_email=user_id_or_email, db=db)
+    if not check_user_permissions(target_user=target_user, current_user=current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     deactivated_user_id = await deactivate_user(user_id_or_email=user_id_or_email, db=db)
     if deactivated_user_id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found or not active")
@@ -100,6 +109,9 @@ async def deactivate_user_handler(user_id_or_email: Union[UUID, EmailStr],
 async def delete_user_handler(user_id_or_email: Union[UUID, EmailStr],
                               current_user = Depends(get_current_user_from_token),
                               db: AsyncSession = Depends(get_db)):
+    target_user = await get_user_for_auth(user_id_or_email=user_id_or_email, db=db)
+    if not check_user_permissions(target_user=target_user, current_user=current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     deleted_user_id = await delete_user(user_id_or_email=user_id_or_email, db=db)
     if deleted_user_id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
